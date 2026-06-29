@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Productos')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="container-fluid px-3 px-lg-4">
+        <div th:replace="~{fragments/layout :: alerts}"></div>
+
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Productos y stock</h1>
+                <p class="text-secondary mb-0">Consulta inventario disponible y alertas de stock minimo.</p>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newProductModal">
+                    <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+                </button>
+                <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#newCategoryModal">
+                    <i class="bi bi-tags me-1"></i>Nueva categoria
+                </button>
+                <select id="categoryFilter" class="form-select" style="max-width: 220px;">
+                    <option value="">Todas las categorias</option>
+                    <option value="sin-categoria">Sin categoria</option>
+                    <option th:each="categoria : ${categorias}" th:value="${categoria.id}" th:text="${categoria.nombre}">Categoria</option>
+                </select>
+                <div class="input-group" style="max-width: 360px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="productSearch" type="search" class="form-control" placeholder="Buscar producto">
+                </div>
+            </div>
+        </div>
+
+        <section class="content-panel p-3 p-lg-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="productsTable">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoria</th>
+                        <th>Descripcion</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-center">Stock</th>
+                        <th class="text-center">Minimo</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="producto : ${productos}"
+                        th:data-category-id="${producto.categoria != null ? producto.categoria.id : 'sin-categoria'}">
+                        <td class="fw-semibold" th:text="${producto.nombre}">Producto</td>
+                        <td>
+                            <span class="badge text-bg-light" th:text="${producto.categoria != null ? producto.categoria.nombre : 'Sin categoria'}">Categoria</span>
+                        </td>
+                        <td class="text-secondary" th:text="${producto.descripcion ?: 'Sin descripcion'}">Descripcion</td>
+                        <td class="text-end">C$ <span th:text="${#numbers.formatDecimal(producto.precio, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                        <td class="text-center" th:text="${producto.stock}">0</td>
+                        <td class="text-center" th:text="${producto.stockMinimo}">0</td>
+                        <td class="text-center">
+                            <span th:if="${producto.stock == 0}" class="badge text-bg-danger">Agotado</span>
+                            <span th:if="${producto.stock > 0 and producto.requiereAlertaStock()}" class="badge text-bg-warning">Stock bajo</span>
+                            <span th:if="${producto.stock > 0 and !producto.requiereAlertaStock()}" class="badge text-bg-success">Disponible</span>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm" type="button"
+                                    th:data-delete-url="@{/api/comercial/productos/{id}(id=${producto.id})}">
+                                <i class="bi bi-trash3 me-1"></i>Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(productos)}">
+                        <td colspan="8" class="text-center text-secondary py-4">No hay productos registrados.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="content-panel p-3 p-lg-4 mt-4">
+            <h2 class="h5 fw-bold mb-3">Categorias</h2>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="categoriesTable">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Categoria</th>
+                        <th>Descripcion</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="categoria : ${categorias}">
+                        <td class="fw-semibold" th:text="${categoria.nombre}">Categoria</td>
+                        <td class="text-secondary" th:text="${categoria.descripcion ?: 'Sin descripcion'}">Descripcion</td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm" type="button"
+                                    th:data-delete-url="@{/api/comercial/categorias/{id}(id=${categoria.id})}">
+                                <i class="bi bi-trash3 me-1"></i>Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(categorias)}">
+                        <td colspan="3" class="text-center text-secondary py-4">No hay categorias registradas.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="modal fade" id="newProductModal" tabindex="-1" aria-labelledby="newProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form id="newProductForm" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="newProductModalLabel">Registrar producto</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="newProductAlert"></div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="productName" class="form-label">Nombre</label>
+                            <input id="productName" class="form-control" type="text" required>
+                            <div class="invalid-feedback">Ingresa el nombre del producto.</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="productCategory" class="form-label">Categoria</label>
+                            <select id="productCategory" class="form-select">
+                                <option value="">Sin categoria</option>
+                                <option th:each="categoria : ${categorias}" th:value="${categoria.id}" th:text="${categoria.nombre}">Categoria</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="productPrice" class="form-label">Precio</label>
+                            <input id="productPrice" class="form-control" type="number" min="0.01" step="0.01" required>
+                            <div class="invalid-feedback">Ingresa un precio valido.</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="productStock" class="form-label">Stock inicial</label>
+                            <input id="productStock" class="form-control" type="number" min="0" required>
+                            <div class="invalid-feedback">Ingresa el stock inicial.</div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="productStockMin" class="form-label">Stock minimo</label>
+                            <input id="productStockMin" class="form-control" type="number" min="0" value="5" required>
+                            <div class="invalid-feedback">Ingresa el stock minimo.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="productDescription" class="form-label">Descripcion</label>
+                            <textarea id="productDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-check2-circle me-1"></i>Guardar producto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-labelledby="newCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="newCategoryForm" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="newCategoryModalLabel">Registrar categoria</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="newCategoryAlert"></div>
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Nombre</label>
+                        <input id="categoryName" class="form-control" type="text" required>
+                        <div class="invalid-feedback">Ingresa el nombre de la categoria.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label for="categoryDescription" class="form-label">Descripcion</label>
+                        <textarea id="categoryDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-check2-circle me-1"></i>Guardar categoria
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+<script>
+    (() => {
+        const search = document.getElementById('productSearch');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const rows = Array.from(document.querySelectorAll('#productsTable tbody tr'));
+        const newProductForm = document.getElementById('newProductForm');
+        const newProductAlert = document.getElementById('newProductAlert');
+        const newCategoryForm = document.getElementById('newCategoryForm');
+        const newCategoryAlert = document.getElementById('newCategoryAlert');
+        const categoryModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('newCategoryModal'));
+        const categorySelect = document.getElementById('productCategory');
+
+        function showProductAlert(type, message) {
+            newProductAlert.innerHTML = `<div class="alert alert-${type} py-2" role="alert">${message}</div>`;
+        }
+
+        function showCategoryAlert(type, message) {
+            newCategoryAlert.innerHTML = `<div class="alert alert-${type} py-2" role="alert">${message}</div>`;
+        }
+
+        function applyProductFilters() {
+            const term = search.value.trim().toLowerCase();
+            const category = categoryFilter.value;
+            rows.forEach((row) => {
+                const matchesText = !term || row.textContent.toLowerCase().includes(term);
+                const matchesCategory = !category || row.dataset.categoryId === category;
+                row.classList.toggle('d-none', !matchesText || !matchesCategory);
+            });
+        }
+
+        search.addEventListener('input', applyProductFilters);
+        categoryFilter.addEventListener('change', applyProductFilters);
+
+        newProductForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            newProductForm.classList.add('was-validated');
+            if (!newProductForm.checkValidity()) {
+                return;
+            }
+
+            try {
+                const category = document.getElementById('productCategory').value;
+                const response = await fetch('/api/comercial/productos', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        nombre: document.getElementById('productName').value.trim(),
+                        descripcion: document.getElementById('productDescription').value.trim(),
+                        precio: Number(document.getElementById('productPrice').value),
+                        stock: Number(document.getElementById('productStock').value),
+                        stockMinimo: Number(document.getElementById('productStockMin').value),
+                        categoriaId: category ? Number(category) : null
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || error.mensaje || error.message || 'No fue posible registrar el producto.');
+                }
+
+                showProductAlert('success', 'Producto registrado correctamente.');
+                newProductForm.reset();
+                newProductForm.classList.remove('was-validated');
+                setTimeout(() => window.location.reload(), 700);
+            } catch (error) {
+                showProductAlert('danger', error.message);
+            }
+        });
+
+        newCategoryForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            newCategoryForm.classList.add('was-validated');
+            if (!newCategoryForm.checkValidity()) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/comercial/categorias', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        nombre: document.getElementById('categoryName').value.trim(),
+                        descripcion: document.getElementById('categoryDescription').value.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || error.mensaje || error.message || 'No fue posible registrar la categoria.');
+                }
+
+                const categoria = await response.json();
+                categorySelect.add(new Option(categoria.nombre, categoria.id, true, true));
+                newCategoryForm.reset();
+                newCategoryForm.classList.remove('was-validated');
+                newCategoryAlert.innerHTML = '';
+                categoryModal.hide();
+            } catch (error) {
+                showCategoryAlert('danger', error.message);
+            }
+        });
+
+        document.getElementById('productsTable').addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-delete-url]');
+            if (!button || !window.confirm('Deseas eliminar este producto?')) {
+                return;
+            }
+            try {
+                const response = await fetch(button.dataset.deleteUrl, {method: 'DELETE'});
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'No fue posible eliminar el producto. Puede tener ventas o movimientos asociados.');
+                }
+                window.location.reload();
+            } catch (error) {
+                showProductAlert('danger', error.message);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('newProductModal')).show();
+            }
+        });
+
+        document.getElementById('categoriesTable').addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-delete-url]');
+            if (!button || !window.confirm('Deseas eliminar esta categoria?')) {
+                return;
+            }
+            try {
+                const response = await fetch(button.dataset.deleteUrl, {method: 'DELETE'});
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'No fue posible eliminar la categoria. Puede tener productos asociados.');
+                }
+                window.location.reload();
+            } catch (error) {
+                showCategoryAlert('danger', error.message);
+                categoryModal.show();
+            }
+        });
+    })();
+</script>
+</body>
+</html>

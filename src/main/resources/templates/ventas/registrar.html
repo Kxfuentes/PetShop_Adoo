@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Registrar venta')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="container-fluid px-3 px-lg-4">
+        <div id="alertContainer"></div>
+
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Registrar venta</h1>
+                <p class="text-secondary mb-0">Selecciona cliente, agrega productos y genera el comprobante.</p>
+            </div>
+            <a class="btn btn-outline-secondary" th:href="@{/}">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-8">
+                <section class="content-panel p-3 p-lg-4 mb-4">
+                    <form id="saleForm" class="needs-validation" novalidate>
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-5">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label for="clienteId" class="form-label">Cliente</label>
+                                    <button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="modal"
+                                            data-bs-target="#newClientModal">
+                                        <i class="bi bi-person-plus me-1"></i>Nuevo cliente
+                                    </button>
+                                </div>
+                                <select id="clienteId" class="form-select" required>
+                                    <option value="">Seleccionar cliente</option>
+                                    <option th:each="cliente : ${clientes}"
+                                            th:value="${cliente.id}"
+                                            th:text="${cliente.nombre + ' - ' + (cliente.telefono ?: 'Sin telefono')}">
+                                        Cliente
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback">Selecciona un cliente.</div>
+                            </div>
+
+                            <div class="col-12 col-lg-5">
+                                <label for="productoId" class="form-label">Producto</label>
+                                <select id="productoId" class="form-select">
+                                    <option value="">Buscar o seleccionar producto</option>
+                                    <option th:each="producto : ${productos}"
+                                            th:value="${producto.id}"
+                                            th:data-nombre="${producto.nombre}"
+                                            th:data-precio="${producto.precio}"
+                                            th:data-stock="${producto.stock}"
+                                            th:disabled="${producto.stock == 0}"
+                                            th:text="${producto.stock == 0 ? producto.nombre + ' | Agotado' : producto.nombre + ' | Stock: ' + producto.stock + ' | C$ ' + producto.precio}">
+                                        Producto
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-8 col-lg-1">
+                                <label for="cantidad" class="form-label">Cant.</label>
+                                <input id="cantidad" type="number" class="form-control" min="1" value="1">
+                            </div>
+
+                            <div class="col-4 col-lg-1 d-flex align-items-end">
+                                <button id="addProductBtn" class="btn btn-primary w-100" type="button" title="Agregar producto">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="content-panel p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 fw-bold mb-0">Detalle de venta</h2>
+                        <button id="clearCartBtn" class="btn btn-outline-secondary btn-sm" type="button">
+                            <i class="bi bi-trash3 me-1"></i>Limpiar
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-end">Precio</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-end">Accion</th>
+                            </tr>
+                            </thead>
+                            <tbody id="cartBody">
+                            <tr id="emptyCartRow">
+                                <td colspan="5" class="text-center text-secondary py-4">Aun no hay productos agregados.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <aside class="content-panel p-3 p-lg-4 mb-4">
+                    <h2 class="h5 fw-bold mb-3">Resumen</h2>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Productos</span>
+                        <span id="itemCount" class="fw-semibold">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-secondary">Total</span>
+                        <span class="fs-4 fw-bold">C$ <span id="saleTotal">0.00</span></span>
+                    </div>
+                    <button id="submitSaleBtn" class="btn btn-success w-100 py-2" type="button">
+                        <i class="bi bi-check2-circle me-1"></i>Registrar venta
+                    </button>
+                </aside>
+
+                <aside id="receiptPanel" class="content-panel p-3 p-lg-4 d-none">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h2 class="h5 fw-bold mb-1">Comprobante</h2>
+                            <div class="text-secondary small">Venta registrada correctamente</div>
+                        </div>
+                        <span class="badge text-bg-success" id="receiptStatus">PAGADA</span>
+                    </div>
+                    <div id="receiptContent" class="border rounded p-3 bg-light small"></div>
+                    <button id="printReceiptBtn" class="btn btn-outline-primary w-100 mt-3" type="button">
+                        <i class="bi bi-printer me-1"></i>Imprimir comprobante
+                    </button>
+                </aside>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal fade" id="newClientModal" tabindex="-1" aria-labelledby="newClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="newClientForm" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="newClientModalLabel">Registrar nuevo cliente</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="newClientAlert"></div>
+                    <div class="mb-3">
+                        <label for="newClientName" class="form-label">Nombre</label>
+                        <input id="newClientName" class="form-control" type="text" required>
+                        <div class="invalid-feedback">Ingresa el nombre del cliente.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newClientPhone" class="form-label">Telefono</label>
+                        <input id="newClientPhone" class="form-control" type="tel">
+                    </div>
+                    <div class="mb-3">
+                        <label for="newClientEmail" class="form-label">Correo</label>
+                        <input id="newClientEmail" class="form-control" type="email">
+                        <div class="invalid-feedback">Ingresa un correo valido.</div>
+                    </div>
+                    <div class="mb-0">
+                        <label for="newClientAddress" class="form-label">Direccion</label>
+                        <input id="newClientAddress" class="form-control" type="text">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check2-circle me-1"></i>Guardar cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+<script>
+    (() => {
+        'use strict';
+
+        const cart = new Map();
+        const productSelect = document.getElementById('productoId');
+        const quantityInput = document.getElementById('cantidad');
+        const clientSelect = document.getElementById('clienteId');
+        const cartBody = document.getElementById('cartBody');
+        const emptyCartRow = document.getElementById('emptyCartRow');
+        const saleTotal = document.getElementById('saleTotal');
+        const itemCount = document.getElementById('itemCount');
+        const alertContainer = document.getElementById('alertContainer');
+        const receiptPanel = document.getElementById('receiptPanel');
+        const receiptContent = document.getElementById('receiptContent');
+        const receiptStatus = document.getElementById('receiptStatus');
+        const newClientForm = document.getElementById('newClientForm');
+        const newClientModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('newClientModal'));
+        const newClientAlert = document.getElementById('newClientAlert');
+
+        const money = new Intl.NumberFormat('es-NI', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
+        function showAlert(type, message) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>`;
+        }
+
+        function selectedProduct() {
+            const option = productSelect.selectedOptions[0];
+            if (!option || !option.value) {
+                return null;
+            }
+            return {
+                id: Number(option.value),
+                nombre: option.dataset.nombre,
+                precio: Number(option.dataset.precio),
+                stock: Number(option.dataset.stock)
+            };
+        }
+
+        function showNewClientAlert(type, message) {
+            newClientAlert.innerHTML = `
+                <div class="alert alert-${type} py-2" role="alert">
+                    ${message}
+                </div>`;
+        }
+
+        function renderCart() {
+            cartBody.querySelectorAll('tr[data-product-id]').forEach((row) => row.remove());
+            emptyCartRow.classList.toggle('d-none', cart.size > 0);
+
+            let total = 0;
+            let units = 0;
+
+            cart.forEach((item) => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+                units += item.cantidad;
+
+                const row = document.createElement('tr');
+                row.dataset.productId = item.id;
+                row.innerHTML = `
+                    <td>
+                        <div class="fw-semibold">${item.nombre}</div>
+                        <div class="small text-secondary">Stock disponible: ${item.stock}</div>
+                    </td>
+                    <td class="text-center">${item.cantidad}</td>
+                    <td class="text-end">C$ ${money.format(item.precio)}</td>
+                    <td class="text-end fw-semibold">C$ ${money.format(subtotal)}</td>
+                    <td class="text-end">
+                        <button class="btn btn-outline-danger btn-sm" type="button" data-remove="${item.id}" title="Quitar">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </td>`;
+                cartBody.appendChild(row);
+            });
+
+            saleTotal.textContent = money.format(total);
+            itemCount.textContent = String(units);
+        }
+
+        document.getElementById('addProductBtn').addEventListener('click', () => {
+            const product = selectedProduct();
+            const quantity = Number(quantityInput.value);
+
+            if (!product) {
+                showAlert('warning', 'Selecciona un producto para agregarlo a la venta.');
+                return;
+            }
+            if (product.stock === 0) {
+                showAlert('danger', `${product.nombre} esta agotado.`);
+                return;
+            }
+            if (!Number.isInteger(quantity) || quantity < 1) {
+                showAlert('warning', 'Ingresa una cantidad valida.');
+                return;
+            }
+
+            const current = cart.get(product.id);
+            const newQuantity = (current?.cantidad || 0) + quantity;
+            if (newQuantity > product.stock) {
+                showAlert('danger', `No hay stock suficiente para ${product.nombre}. Disponible: ${product.stock}.`);
+                return;
+            }
+
+            cart.set(product.id, {...product, cantidad: newQuantity});
+            productSelect.value = '';
+            quantityInput.value = '1';
+            renderCart();
+        });
+
+        newClientForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            newClientForm.classList.add('was-validated');
+            if (!newClientForm.checkValidity()) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/servicios/clientes', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        nombre: document.getElementById('newClientName').value.trim(),
+                        telefono: document.getElementById('newClientPhone').value.trim(),
+                        correo: document.getElementById('newClientEmail').value.trim(),
+                        direccion: document.getElementById('newClientAddress').value.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || error.mensaje || error.message || 'No fue posible registrar el cliente.');
+                }
+
+                const cliente = await response.json();
+                const option = new Option(
+                    `${cliente.nombre} - ${cliente.telefono || 'Sin telefono'}`,
+                    cliente.id,
+                    true,
+                    true
+                );
+                clientSelect.add(option);
+                showAlert('success', `Cliente ${cliente.nombre} registrado y seleccionado.`);
+                newClientForm.reset();
+                newClientForm.classList.remove('was-validated');
+                newClientAlert.innerHTML = '';
+                newClientModal.hide();
+            } catch (error) {
+                showNewClientAlert('danger', error.message);
+            }
+        });
+
+        cartBody.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-remove]');
+            if (!button) {
+                return;
+            }
+            cart.delete(Number(button.dataset.remove));
+            renderCart();
+        });
+
+        document.getElementById('clearCartBtn').addEventListener('click', () => {
+            cart.clear();
+            renderCart();
+        });
+
+        document.getElementById('submitSaleBtn').addEventListener('click', async () => {
+            if (!clientSelect.value) {
+                showAlert('warning', 'Selecciona un cliente antes de registrar la venta.');
+                clientSelect.focus();
+                return;
+            }
+            if (cart.size === 0) {
+                showAlert('warning', 'Agrega al menos un producto a la venta.');
+                return;
+            }
+
+            const payload = {
+                clienteId: Number(clientSelect.value),
+                detalles: Array.from(cart.values()).map((item) => ({
+                    productoId: item.id,
+                    cantidad: item.cantidad
+                }))
+            };
+
+            try {
+                const response = await fetch('/api/comercial/ventas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.mensaje || error.message || 'No fue posible registrar la venta.');
+                }
+
+                const venta = await response.json();
+                showAlert('success', `Venta #${venta.id} registrada correctamente.`);
+                renderReceipt(venta);
+                cart.clear();
+                renderCart();
+            } catch (error) {
+                showAlert('danger', error.message);
+            }
+        });
+
+        function renderReceipt(venta) {
+            receiptStatus.textContent = venta.estado;
+            const detalles = venta.detalles.map((detalle) => `
+                <tr>
+                    <td>${detalle.productoNombre}</td>
+                    <td class="text-center">${detalle.cantidad}</td>
+                    <td class="text-end">C$ ${money.format(Number(detalle.subtotal))}</td>
+                </tr>`).join('');
+
+            receiptContent.innerHTML = `
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Comprobante</span>
+                    <strong>#${venta.id}</strong>
+                </div>
+                <div class="mb-2">Cliente: <strong>${venta.clienteNombre}</strong></div>
+                <div class="mb-3">Fecha: ${new Date(venta.fecha).toLocaleString('es-NI')}</div>
+                <table class="table table-sm mb-2">
+                    <tbody>${detalles}</tbody>
+                </table>
+                <div class="text-end fs-6">Total: <strong>C$ ${money.format(Number(venta.total))}</strong></div>`;
+            receiptPanel.classList.remove('d-none');
+        }
+
+        document.getElementById('printReceiptBtn').addEventListener('click', () => {
+            const printWindow = window.open('', '_blank', 'width=420,height=640');
+            printWindow.document.write(`
+                <html lang="es">
+                <head>
+                    <title>Comprobante</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                </head>
+                <body class="p-4">${receiptContent.innerHTML}</body>
+                </html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        });
+
+        renderCart();
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="container-fluid px-3 px-lg-4">
+        <div th:replace="~{fragments/layout :: alerts}"></div>
+
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Dashboard</h1>
+                <p class="text-secondary mb-0">Resumen operativo de ventas, inventario y servicios.</p>
+            </div>
+            <div class="text-lg-end">
+                <div class="small text-secondary">Usuario activo</div>
+                <div class="fw-semibold" sec:authentication="name">usuario@petshop.com</div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="content-panel p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Ventas registradas</div>
+                            <div class="fs-3 fw-bold" th:text="${cantidadVentas}">0</div>
+                        </div>
+                        <span class="btn btn-primary btn-sm disabled border-0"><i class="bi bi-receipt"></i></span>
+                    </div>
+                    <div class="text-secondary small mt-2">
+                        Total: C$ <span th:text="${#numbers.formatDecimal(totalVentas, 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="content-panel p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Productos</div>
+                            <div class="fs-3 fw-bold" th:text="${totalProductos}">0</div>
+                        </div>
+                        <span class="btn btn-success btn-sm disabled border-0"><i class="bi bi-box-seam"></i></span>
+                    </div>
+                    <div class="text-secondary small mt-2">
+                        <span th:text="${productosBajoStock}">0</span> con alerta de stock
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="content-panel p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Clientes</div>
+                            <div class="fs-3 fw-bold" th:text="${totalClientes}">0</div>
+                        </div>
+                        <span class="btn btn-info btn-sm disabled border-0"><i class="bi bi-people"></i></span>
+                    </div>
+                    <div class="text-secondary small mt-2">Base de clientes disponible</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <div class="content-panel p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="text-secondary small">Mascotas</div>
+                            <div class="fs-3 fw-bold" th:text="${totalMascotas}">0</div>
+                        </div>
+                        <span class="btn btn-warning btn-sm disabled border-0"><i class="bi bi-stars"></i></span>
+                    </div>
+                    <div class="text-secondary small mt-2">Expedientes del subsistema de servicios</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-8">
+                <section class="content-panel p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h5 fw-bold mb-0">Ventas recientes</h2>
+                        <a class="btn btn-outline-primary btn-sm" th:href="@{/ventas/registrar}"
+                           sec:authorize="hasAnyRole('ADMIN','CAJERO')">
+                            <i class="bi bi-plus-lg me-1"></i>Nueva venta
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="venta : ${ventasRecientes}">
+                                <td class="fw-semibold" th:text="${venta.id}">1</td>
+                                <td th:text="${venta.clienteNombre}">Cliente</td>
+                                <td th:text="${#temporals.format(venta.fecha, 'dd/MM/yyyy HH:mm')}">23/06/2026 09:00</td>
+                                <td><span class="badge text-bg-success" th:text="${venta.estado}">PAGADA</span></td>
+                                <td class="text-end">C$ <span th:text="${#numbers.formatDecimal(venta.total, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(ventasRecientes)}">
+                                <td colspan="5" class="text-center text-secondary py-4">No hay ventas registradas.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <section class="content-panel p-3 p-lg-4">
+                    <h2 class="h5 fw-bold mb-3">Accesos rapidos</h2>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-primary text-start" th:href="@{/ventas/registrar}"
+                           sec:authorize="hasAnyRole('ADMIN','CAJERO')">
+                            <i class="bi bi-cart-plus me-2"></i>Registrar venta
+                        </a>
+                        <a class="btn btn-outline-primary text-start" th:href="@{/productos/listar}"
+                           sec:authorize="hasAnyRole('ADMIN','CAJERO')">
+                            <i class="bi bi-boxes me-2"></i>Ver productos y stock
+                        </a>
+                        <a class="btn btn-outline-primary text-start" th:href="@{/citas/agendar}"
+                           sec:authorize="hasAnyRole('ADMIN','RECEPCIONISTA')">
+                            <i class="bi bi-calendar-plus me-2"></i>Agendar cita
+                        </a>
+                        <a class="btn btn-outline-primary text-start" th:href="@{/clientes/listar}"
+                           sec:authorize="hasAnyRole('ADMIN','RECEPCIONISTA')">
+                            <i class="bi bi-person-lines-fill me-2"></i>Clientes
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/layout :: head('Servicios')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="container-fluid px-3 px-lg-4">
+        <div id="alertContainer"></div>
+
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Servicios</h1>
+                <p class="text-secondary mb-0">Administra los servicios ofrecidos para agendar citas.</p>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-2">
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#newServiceModal">
+                    <i class="bi bi-plus-lg me-1"></i>Nuevo servicio
+                </button>
+                <div class="input-group" style="max-width: 360px;">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="serviceSearch" type="search" class="form-control" placeholder="Buscar servicio">
+                </div>
+            </div>
+        </div>
+
+        <section class="content-panel p-3 p-lg-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="servicesTable">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Descripcion</th>
+                        <th class="text-center">Duracion</th>
+                        <th class="text-end">Precio</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="servicio : ${servicios}">
+                        <td class="fw-semibold" th:text="${servicio.nombre}">Servicio</td>
+                        <td class="text-secondary" th:text="${servicio.descripcion ?: 'Sin descripcion'}">Descripcion</td>
+                        <td class="text-center" th:text="${servicio.duracionMinutos + ' min'}">30 min</td>
+                        <td class="text-end">C$ <span th:text="${#numbers.formatDecimal(servicio.precio, 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm" type="button"
+                                    th:data-delete-url="@{/api/servicios/servicios/{id}(id=${servicio.id})}">
+                                <i class="bi bi-trash3 me-1"></i>Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(servicios)}">
+                        <td colspan="5" class="text-center text-secondary py-4">No hay servicios registrados.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div class="modal fade" id="newServiceModal" tabindex="-1" aria-labelledby="newServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="newServiceForm" class="needs-validation" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="newServiceModalLabel">Registrar servicio</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="newServiceAlert"></div>
+                    <div class="mb-3">
+                        <label for="serviceName" class="form-label">Nombre</label>
+                        <input id="serviceName" class="form-control" type="text" required>
+                        <div class="invalid-feedback">Ingresa el nombre del servicio.</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="serviceDuration" class="form-label">Duracion minutos</label>
+                            <input id="serviceDuration" class="form-control" type="number" min="1" required>
+                            <div class="invalid-feedback">Ingresa la duracion.</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="servicePrice" class="form-label">Precio</label>
+                            <input id="servicePrice" class="form-control" type="number" min="0.01" step="0.01" required>
+                            <div class="invalid-feedback">Ingresa el precio.</div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="serviceDescription" class="form-label">Descripcion</label>
+                        <textarea id="serviceDescription" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-check2-circle me-1"></i>Guardar servicio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: scripts}"></div>
+<script>
+    (() => {
+        'use strict';
+
+        const alertContainer = document.getElementById('alertContainer');
+        const form = document.getElementById('newServiceForm');
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('newServiceModal'));
+        const formAlert = document.getElementById('newServiceAlert');
+        const search = document.getElementById('serviceSearch');
+        const rows = Array.from(document.querySelectorAll('#servicesTable tbody tr'));
+
+        function showAlert(type, message) {
+            alertContainer.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button></div>`;
+        }
+
+        function showFormAlert(type, message) {
+            formAlert.innerHTML = `<div class="alert alert-${type} py-2" role="alert">${message}</div>`;
+        }
+
+        search.addEventListener('input', () => {
+            const term = search.value.trim().toLowerCase();
+            rows.forEach((row) => row.classList.toggle('d-none', term && !row.textContent.toLowerCase().includes(term)));
+        });
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            form.classList.add('was-validated');
+            if (!form.checkValidity()) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/servicios/servicios', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        nombre: document.getElementById('serviceName').value.trim(),
+                        duracionMinutos: Number(document.getElementById('serviceDuration').value),
+                        precio: Number(document.getElementById('servicePrice').value),
+                        descripcion: document.getElementById('serviceDescription').value.trim()
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || error.mensaje || error.message || 'No fue posible registrar el servicio.');
+                }
+
+                form.reset();
+                form.classList.remove('was-validated');
+                modal.hide();
+                showAlert('success', 'Servicio registrado correctamente.');
+                setTimeout(() => window.location.reload(), 700);
+            } catch (error) {
+                showFormAlert('danger', error.message);
+            }
+        });
+
+        document.getElementById('servicesTable').addEventListener('click', async (event) => {
+            const button = event.target.closest('[data-delete-url]');
+            if (!button || !window.confirm('Deseas eliminar este servicio?')) {
+                return;
+            }
+            try {
+                const response = await fetch(button.dataset.deleteUrl, {method: 'DELETE'});
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error || 'No fue posible eliminar el servicio. Puede tener citas asociadas.');
+                }
+                showAlert('success', 'Servicio eliminado correctamente.');
+                setTimeout(() => window.location.reload(), 500);
+            } catch (error) {
+                showAlert('danger', error.message);
+            }
+        });
+    })();
+</script>
+</body>
+</html>
