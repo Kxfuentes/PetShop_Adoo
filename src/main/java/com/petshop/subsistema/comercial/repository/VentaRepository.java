@@ -12,4 +12,6 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     List<Venta> findByEstado(EstadoVenta estado);
 
     List<Venta> findByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
+
+    boolean existsByClienteId(Long clienteId);
 }

@@ -21,4 +21,10 @@ public interface CitaServicioRepository extends JpaRepository<CitaServicio, Long
 
     @EntityGraph(attributePaths = {"mascota", "mascota.cliente", "servicio"})
     List<CitaServicio> findByEstado(EstadoCita estado);
+
+    boolean existsByMascotaId(Long mascotaId);
+
+    boolean existsByMascotaClienteId(Long clienteId);
+
+    boolean existsByServicioId(Long servicioId);
 }

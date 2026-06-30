@@ -1,8 +1,10 @@
 package com.petshop.subsistema.servicios.service;
 
 import com.petshop.dto.MascotaRequest;
+import com.petshop.exception.OperacionInvalidaException;
 import com.petshop.exception.RecursoNoEncontradoException;
 import com.petshop.model.Mascota;
+import com.petshop.subsistema.servicios.repository.CitaServicioRepository;
 import com.petshop.subsistema.servicios.repository.MascotaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
     private final ClienteService clienteService;
+    private final CitaServicioRepository citaServicioRepository;
 
     public Mascota registrar(MascotaRequest request) {
         Mascota mascota = Mascota.builder()
@@ -63,6 +66,12 @@ public class MascotaService {
     }
 
     public void eliminar(Long id) {
-        mascotaRepository.delete(buscar(id));
+        Mascota mascota = buscar(id);
+        if (citaServicioRepository.existsByMascotaId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar la mascota '" + mascota.getNombre()
+                            + "' porque tiene citas registradas.");
+        }
+        mascotaRepository.delete(mascota);
     }
 }

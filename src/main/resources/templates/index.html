@@ -139,6 +139,36 @@
                         </a>
                     </div>
                 </section>
+
+                <section class="content-panel p-3 p-lg-4 mt-4">
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                        <h2 class="h5 fw-bold mb-0">Alertas de inventario</h2>
+                        <span class="badge text-bg-danger" th:text="${#lists.size(stockAlerts)}">0</span>
+                    </div>
+
+                    <div class="list-group list-group-flush" th:if="${stockAlerts != null and !#lists.isEmpty(stockAlerts)}">
+                        <div class="list-group-item px-0" th:each="alerta, stat : ${stockAlerts}" th:if="${stat.index < 5}">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="fw-semibold" th:text="${alerta.producto}">Producto</div>
+                                    <div class="small text-secondary" th:text="${alerta.mensaje}">Mensaje</div>
+                                </div>
+                                <span class="badge"
+                                      th:classappend="${alerta.stock == 0} ? ' text-bg-danger' : ' text-bg-warning'"
+                                      th:text="${alerta.stock == 0} ? 'Agotado' : 'Stock bajo'">Stock bajo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-secondary small py-2" th:if="${stockAlerts == null or #lists.isEmpty(stockAlerts)}">
+                        Sin alertas activas.
+                    </div>
+
+                    <a class="btn btn-outline-primary btn-sm w-100 mt-3" th:href="@{/productos/listar}"
+                       sec:authorize="hasAnyRole('ADMIN','CAJERO')">
+                        <i class="bi bi-boxes me-1"></i>Revisar inventario
+                    </a>
+                </section>
             </div>
         </div>
     </div>

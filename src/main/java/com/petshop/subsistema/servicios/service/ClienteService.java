@@ -1,9 +1,13 @@
 package com.petshop.subsistema.servicios.service;
 
 import com.petshop.dto.ClienteRequest;
+import com.petshop.exception.OperacionInvalidaException;
 import com.petshop.exception.RecursoNoEncontradoException;
 import com.petshop.model.Cliente;
+import com.petshop.subsistema.comercial.repository.VentaRepository;
 import com.petshop.subsistema.servicios.repository.ClienteRepository;
+import com.petshop.subsistema.servicios.repository.CitaServicioRepository;
+import com.petshop.subsistema.servicios.repository.MascotaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +20,9 @@ import java.util.List;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final MascotaRepository mascotaRepository;
+    private final CitaServicioRepository citaServicioRepository;
+    private final VentaRepository ventaRepository;
 
     public Cliente registrar(ClienteRequest request) {
         Cliente cliente = Cliente.builder()
@@ -48,6 +55,22 @@ public class ClienteService {
     }
 
     public void eliminar(Long id) {
-        clienteRepository.delete(buscar(id));
+        Cliente cliente = buscar(id);
+        if (ventaRepository.existsByClienteId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el cliente '" + cliente.getNombre()
+                            + "' porque tiene ventas registradas.");
+        }
+        if (citaServicioRepository.existsByMascotaClienteId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el cliente '" + cliente.getNombre()
+                            + "' porque una de sus mascotas tiene citas registradas.");
+        }
+        if (mascotaRepository.existsByClienteId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el cliente '" + cliente.getNombre()
+                            + "' porque tiene mascotas asociadas. Elimina o reasigna esas mascotas primero.");
+        }
+        clienteRepository.delete(cliente);
     }
 }

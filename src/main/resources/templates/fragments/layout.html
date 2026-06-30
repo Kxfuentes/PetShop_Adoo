@@ -6,29 +6,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${pageTitle} + ' | PetShop Management'">PetShop Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
             --petshop-primary: #2563eb;
-            --petshop-accent: #16a34a;
+            --petshop-primary-dark: #1d4ed8;
+            --petshop-accent: #059669;
             --petshop-ink: #1f2937;
+            --petshop-muted: #64748b;
             --petshop-bg: #f6f8fb;
+            --petshop-line: rgba(31, 41, 55, .1);
+            --petshop-danger: #dc2626;
+            --petshop-warning: #d97706;
+        }
+
+        * {
+            letter-spacing: 0;
         }
 
         body {
             background: var(--petshop-bg);
             color: var(--petshop-ink);
+            font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            text-rendering: optimizeLegibility;
         }
 
         .app-navbar {
             background: #ffffff;
-            border-bottom: 1px solid rgba(31, 41, 55, .08);
+            border-bottom: 1px solid var(--petshop-line);
+            box-shadow: 0 .5rem 1.4rem rgba(15, 23, 42, .04);
         }
 
         .brand-mark {
             align-items: center;
-            background: var(--petshop-primary);
+            background: linear-gradient(135deg, var(--petshop-primary), var(--petshop-accent));
             border-radius: .55rem;
             color: #ffffff;
             display: inline-flex;
@@ -44,9 +59,198 @@
 
         .content-panel {
             background: #ffffff;
-            border: 1px solid rgba(31, 41, 55, .08);
+            border: 1px solid var(--petshop-line);
             border-radius: .5rem;
             box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .05);
+        }
+
+        .btn {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+            min-height: 2.4rem;
+            white-space: nowrap;
+        }
+
+        .btn-sm {
+            min-height: 2rem;
+        }
+
+        .btn-primary {
+            background: var(--petshop-primary);
+            border-color: var(--petshop-primary);
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus {
+            background: var(--petshop-primary-dark);
+            border-color: var(--petshop-primary-dark);
+        }
+
+        .btn-success {
+            background: var(--petshop-accent);
+            border-color: var(--petshop-accent);
+        }
+
+        .form-control,
+        .form-select,
+        .input-group-text,
+        .modal-content,
+        .alert,
+        .dropdown-menu,
+        .badge {
+            border-radius: .5rem;
+        }
+
+        .form-control,
+        .form-select {
+            border-color: #d8dee8;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: rgba(37, 99, 235, .55);
+            box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .12);
+        }
+
+        .table {
+            --bs-table-hover-bg: #f8fbff;
+        }
+
+        .table thead th {
+            color: #475569;
+            font-size: .8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .table td,
+        .table th {
+            vertical-align: middle;
+        }
+
+        .page-actions {
+            align-items: stretch;
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .page-actions .input-group,
+        .page-actions .form-select {
+            min-width: 220px;
+        }
+
+        .stock-toast-wrap {
+            left: 50%;
+            pointer-events: none;
+            position: fixed;
+            top: 5rem;
+            transform: translateX(-50%);
+            width: min(94vw, 520px);
+            z-index: 1090;
+        }
+
+        .stock-toast {
+            background: #ffffff;
+            border: 1px solid rgba(220, 38, 38, .18);
+            border-left: .35rem solid var(--petshop-warning);
+            border-radius: .75rem;
+            box-shadow: 0 1rem 2.5rem rgba(15, 23, 42, .18);
+            color: var(--petshop-ink);
+            pointer-events: auto;
+        }
+
+        .stock-toast.is-empty {
+            border-left-color: var(--petshop-danger);
+        }
+
+        .stock-toast .toast-header {
+            background: transparent;
+            border-bottom-color: var(--petshop-line);
+            color: var(--petshop-ink);
+        }
+
+        .stock-alert-list {
+            display: grid;
+            gap: .55rem;
+        }
+
+        .stock-alert-item {
+            align-items: center;
+            display: flex;
+            gap: .75rem;
+            justify-content: space-between;
+        }
+
+        .stock-alert-message {
+            min-width: 0;
+        }
+
+        .stock-alert-product {
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .receipt-card {
+            background: #fffefa;
+            border: 1px solid #eadfca;
+            border-radius: .75rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8);
+            color: #1f2937;
+            font-size: .9rem;
+            overflow: hidden;
+        }
+
+        .receipt-head {
+            background: #172554;
+            color: #ffffff;
+            padding: 1rem;
+        }
+
+        .receipt-title {
+            font-size: 1rem;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .receipt-meta {
+            color: rgba(255, 255, 255, .75);
+            font-size: .78rem;
+        }
+
+        .receipt-body {
+            padding: 1rem;
+        }
+
+        .receipt-row {
+            align-items: center;
+            display: flex;
+            gap: .75rem;
+            justify-content: space-between;
+            padding: .35rem 0;
+        }
+
+        .receipt-divider {
+            border-top: 1px dashed #c9bfae;
+            margin: .75rem 0;
+        }
+
+        .receipt-total {
+            align-items: baseline;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .receipt-note {
+            background: #f8fafc;
+            border-radius: .5rem;
+            color: #475569;
+            padding: .65rem .75rem;
         }
 
         .nav-link {
@@ -59,6 +263,18 @@
         .nav-link:focus {
             background: #eef4ff;
             color: var(--petshop-primary);
+        }
+
+        @media (max-width: 575.98px) {
+            .btn,
+            .input-group,
+            .form-select {
+                width: 100%;
+            }
+
+            .stock-toast-wrap {
+                top: 4.5rem;
+            }
         }
     </style>
 </head>
@@ -154,7 +370,157 @@
 </div>
 
 <div th:fragment="scripts">
+    <div class="stock-toast-wrap" th:if="${stockAlerts != null and !#lists.isEmpty(stockAlerts)}">
+        <div id="stockAlertToast"
+             class="toast stock-toast"
+             th:classappend="${stockAlerts[0].stock == 0} ? ' is-empty' : ''"
+             role="alert"
+             aria-live="assertive"
+             aria-atomic="true"
+             data-bs-delay="9000">
+            <div class="toast-header">
+                <i class="bi bi-bell-fill me-2"
+                   th:classappend="${stockAlerts[0].stock == 0} ? ' text-danger' : ' text-warning'"></i>
+                <strong class="me-auto">Alerta de inventario</strong>
+                <small th:text="${#lists.size(stockAlerts) + ' pendiente(s)'}">1 pendiente</small>
+                <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+            </div>
+            <div class="toast-body">
+                <div class="stock-alert-list">
+                    <div class="stock-alert-item"
+                         th:each="alerta, stat : ${stockAlerts}"
+                         th:if="${stat.index < 3}"
+                         th:data-stock-key="|${alerta.productoId}:${alerta.stock}:${alerta.stockMinimo}|">
+                        <div class="stock-alert-message">
+                            <div class="stock-alert-product" th:text="${alerta.producto}">Producto</div>
+                            <div class="small text-secondary" th:text="${alerta.mensaje}">Mensaje</div>
+                        </div>
+                        <span class="badge"
+                              th:classappend="${alerta.stock == 0} ? ' text-bg-danger' : ' text-bg-warning'"
+                              th:text="${alerta.stock == 0} ? 'Agotado' : 'Stock bajo'">Stock bajo</span>
+                    </div>
+                </div>
+                <a class="btn btn-outline-primary btn-sm w-100 mt-3" th:href="@{/productos/listar}">
+                    <i class="bi bi-boxes me-1"></i>Ver inventario
+                </a>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (() => {
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replaceAll('&', '&amp;')
+                    .replaceAll('<', '&lt;')
+                    .replaceAll('>', '&gt;')
+                    .replaceAll('"', '&quot;')
+                    .replaceAll("'", '&#039;');
+            }
+
+            function alertMessage(alerta) {
+                if (Number(alerta.stock) === 0) {
+                    return 'Producto Agotado';
+                }
+                return `Quedan ${alerta.stock} de minimo ${alerta.stockMinimo}`;
+            }
+
+            function readStoredStockSignature() {
+                try {
+                    return sessionStorage.getItem('petshop.stockToast.signature');
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function storeStockSignature(signature) {
+                try {
+                    sessionStorage.setItem('petshop.stockToast.signature', signature);
+                } catch (error) {
+                    // El aviso sigue funcionando aunque el navegador bloquee sessionStorage.
+                }
+            }
+
+            function dynamicStockSignature(alerts) {
+                return alerts
+                    .map((alerta) => `${alerta.id || alerta.productoId}:${alerta.stock}:${alerta.stockMinimo}`)
+                    .sort()
+                    .join('|');
+            }
+
+            function staticStockSignature(toastElement) {
+                return Array.from(toastElement.querySelectorAll('[data-stock-key]'))
+                    .map((item) => item.dataset.stockKey)
+                    .sort()
+                    .join('|');
+            }
+
+            function shouldShowStockToast(signature) {
+                if (!signature) {
+                    return true;
+                }
+                if (readStoredStockSignature() === signature) {
+                    return false;
+                }
+                storeStockSignature(signature);
+                return true;
+            }
+
+            window.petshopShowStockToast = (alerts) => {
+                if (!Array.isArray(alerts) || alerts.length === 0 || !window.bootstrap) {
+                    return;
+                }
+
+                const signature = dynamicStockSignature(alerts);
+                if (!shouldShowStockToast(signature)) {
+                    return;
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'stock-toast-wrap';
+                const hasEmpty = alerts.some((alerta) => Number(alerta.stock) === 0);
+                const items = alerts.slice(0, 3).map((alerta) => {
+                    const isEmpty = Number(alerta.stock) === 0;
+                    return `
+                        <div class="stock-alert-item">
+                            <div class="stock-alert-message">
+                                <div class="stock-alert-product">${escapeHtml(alerta.nombre || alerta.producto)}</div>
+                                <div class="small text-secondary">${escapeHtml(alertMessage(alerta))}</div>
+                            </div>
+                            <span class="badge ${isEmpty ? 'text-bg-danger' : 'text-bg-warning'}">${isEmpty ? 'Agotado' : 'Stock bajo'}</span>
+                        </div>`;
+                }).join('');
+
+                wrapper.innerHTML = `
+                    <div class="toast stock-toast ${hasEmpty ? 'is-empty' : ''}" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="9000">
+                        <div class="toast-header">
+                            <i class="bi bi-bell-fill me-2 ${hasEmpty ? 'text-danger' : 'text-warning'}"></i>
+                            <strong class="me-auto">Alerta de inventario</strong>
+                            <small>${alerts.length} pendiente(s)</small>
+                            <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="toast-body">
+                            <div class="stock-alert-list">${items}</div>
+                            <a class="btn btn-outline-primary btn-sm w-100 mt-3" href="/productos/listar">
+                                <i class="bi bi-boxes me-1"></i>Ver inventario
+                            </a>
+                        </div>
+                    </div>`;
+                document.body.appendChild(wrapper);
+                const toast = wrapper.querySelector('.toast');
+                toast.addEventListener('hidden.bs.toast', () => wrapper.remove());
+                bootstrap.Toast.getOrCreateInstance(toast).show();
+            };
+
+            const toastElement = document.getElementById('stockAlertToast');
+            if (toastElement && window.bootstrap) {
+                const signature = staticStockSignature(toastElement);
+                if (shouldShowStockToast(signature)) {
+                    bootstrap.Toast.getOrCreateInstance(toastElement).show();
+                }
+            }
+        })();
+    </script>
 </div>
 </body>
 </html>

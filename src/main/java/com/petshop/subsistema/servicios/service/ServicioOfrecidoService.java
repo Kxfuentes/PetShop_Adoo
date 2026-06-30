@@ -1,8 +1,10 @@
 package com.petshop.subsistema.servicios.service;
 
 import com.petshop.dto.ServicioRequest;
+import com.petshop.exception.OperacionInvalidaException;
 import com.petshop.exception.RecursoNoEncontradoException;
 import com.petshop.model.Servicio;
+import com.petshop.subsistema.servicios.repository.CitaServicioRepository;
 import com.petshop.subsistema.servicios.repository.ServicioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.List;
 public class ServicioOfrecidoService {
 
     private final ServicioRepository servicioRepository;
+    private final CitaServicioRepository citaServicioRepository;
 
     public Servicio crear(ServicioRequest request) {
         Servicio servicio = Servicio.builder()
@@ -48,6 +51,12 @@ public class ServicioOfrecidoService {
     }
 
     public void eliminar(Long id) {
-        servicioRepository.delete(buscar(id));
+        Servicio servicio = buscar(id);
+        if (citaServicioRepository.existsByServicioId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el servicio '" + servicio.getNombre()
+                            + "' porque tiene citas registradas.");
+        }
+        servicioRepository.delete(servicio);
     }
 }

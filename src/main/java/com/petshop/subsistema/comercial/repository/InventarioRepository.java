@@ -14,4 +14,6 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
 
     @EntityGraph(attributePaths = "producto")
     List<Inventario> findByProductoIdOrderByFechaDesc(Long productoId);
+
+    boolean existsByProductoId(Long productoId);
 }

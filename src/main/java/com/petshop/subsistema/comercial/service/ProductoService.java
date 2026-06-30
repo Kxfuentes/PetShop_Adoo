@@ -1,9 +1,11 @@
 package com.petshop.subsistema.comercial.service;
 
 import com.petshop.dto.ProductoRequest;
+import com.petshop.exception.OperacionInvalidaException;
 import com.petshop.exception.RecursoNoEncontradoException;
 import com.petshop.model.Categoria;
 import com.petshop.model.Producto;
+import com.petshop.subsistema.comercial.repository.InventarioRepository;
 import com.petshop.subsistema.comercial.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final CategoriaService categoriaService;
+    private final InventarioRepository inventarioRepository;
 
     public Producto crear(ProductoRequest request) {
         Producto producto = Producto.builder()
@@ -60,7 +63,18 @@ public class ProductoService {
     }
 
     public void eliminar(Long id) {
-        productoRepository.delete(buscar(id));
+        Producto producto = buscar(id);
+        if (productoRepository.existsInVentasByProductoId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el producto '" + producto.getNombre()
+                            + "' porque ya aparece en ventas registradas.");
+        }
+        if (inventarioRepository.existsByProductoId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar el producto '" + producto.getNombre()
+                            + "' porque tiene movimientos de inventario registrados.");
+        }
+        productoRepository.delete(producto);
     }
 
     private Categoria resolverCategoria(Long categoriaId) {

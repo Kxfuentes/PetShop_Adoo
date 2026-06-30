@@ -1,9 +1,11 @@
 package com.petshop.subsistema.comercial.service;
 
 import com.petshop.dto.CategoriaRequest;
+import com.petshop.exception.OperacionInvalidaException;
 import com.petshop.exception.RecursoNoEncontradoException;
 import com.petshop.model.Categoria;
 import com.petshop.subsistema.comercial.repository.CategoriaRepository;
+import com.petshop.subsistema.comercial.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import java.util.List;
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final ProductoRepository productoRepository;
 
     public Categoria crear(CategoriaRequest request) {
         Categoria categoria = Categoria.builder()
@@ -44,6 +47,12 @@ public class CategoriaService {
     }
 
     public void eliminar(Long id) {
-        categoriaRepository.delete(buscar(id));
+        Categoria categoria = buscar(id);
+        if (productoRepository.existsByCategoriaId(id)) {
+            throw new OperacionInvalidaException(
+                    "No se puede eliminar la categoría '" + categoria.getNombre()
+                            + "' porque tiene productos asociados. Reasigna o elimina esos productos primero.");
+        }
+        categoriaRepository.delete(categoria);
     }
 }

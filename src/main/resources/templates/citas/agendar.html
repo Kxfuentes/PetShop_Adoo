@@ -143,7 +143,7 @@
                         </div>
                         <span class="badge text-bg-primary" id="receiptStatus">AGENDADA</span>
                     </div>
-                    <div id="appointmentReceiptContent" class="border rounded p-3 bg-light small"></div>
+                    <div id="appointmentReceiptContent" class="receipt-card"></div>
                     <button id="printAppointmentBtn" class="btn btn-outline-primary w-100 mt-3" type="button">
                         <i class="bi bi-printer me-1"></i>Imprimir comprobante
                     </button>
@@ -174,6 +174,15 @@
         const money = new Intl.NumberFormat('es-NI', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         const petOptions = Array.from(mascotaSelect.querySelectorAll('option[data-cliente-id]'));
         const busySlots = Array.from(document.querySelectorAll('#busySlots .list-group-item[data-client-id]'));
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
 
         function showAlert(type, message) {
             alertContainer.innerHTML = `
@@ -367,15 +376,48 @@
         function renderReceipt(cita) {
             receiptStatus.textContent = cita.estado;
             receiptContent.innerHTML = `
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Cita</span>
-                    <strong>#${cita.id}</strong>
+                <div class="receipt-head">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <p class="receipt-title">PetShop Management</p>
+                            <div class="receipt-meta">Comprobante de cita</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">#${cita.id}</div>
+                            <div class="receipt-meta">${escapeHtml(cita.estado)}</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-2">Cliente: <strong>${cita.clienteNombre || 'Cliente'}</strong></div>
-                <div class="mb-2">Mascota: <strong>${cita.mascotaNombre || 'Mascota'}</strong></div>
-                <div class="mb-2">Servicio: <strong>${cita.servicioNombre || 'Servicio'}</strong></div>
-                <div class="mb-2">Fecha: ${new Date(cita.fechaHora).toLocaleString('es-NI')}</div>
-                <div>Observacion: ${cita.observacion || 'Sin observaciones'}</div>`;
+                <div class="receipt-body">
+                    <div class="receipt-row">
+                        <span class="text-secondary">Cliente</span>
+                        <strong>${escapeHtml(cita.clienteNombre || 'Cliente')}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="text-secondary">Mascota</span>
+                        <strong>${escapeHtml(cita.mascotaNombre || 'Mascota')}</strong>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="text-secondary">Servicio</span>
+                        <strong>${escapeHtml(cita.servicioNombre || 'Servicio')}</strong>
+                    </div>
+                    <div class="receipt-divider"></div>
+                    <div class="receipt-row">
+                        <span class="text-secondary">Fecha</span>
+                        <span>${new Date(cita.fechaHora).toLocaleString('es-NI')}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="text-secondary">Duracion</span>
+                        <span>${cita.duracionMinutos || '-'} min</span>
+                    </div>
+                    <div class="receipt-total">
+                        <span>Total</span>
+                        <span>C$ ${money.format(Number(cita.precio || 0))}</span>
+                    </div>
+                    <div class="receipt-note small mt-3">
+                        ${escapeHtml(cita.observacion || 'Sin observaciones')}
+                    </div>
+                </div>`;
             receiptPanel.classList.remove('d-none');
         }
 
@@ -385,9 +427,24 @@
                 <html lang="es">
                 <head>
                     <title>Comprobante de cita</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <style>
+                        body { background: #f6f8fb; font-family: 'Figtree', sans-serif; padding: 24px; }
+                        .receipt-card { background: #fffefa; border: 1px solid #eadfca; border-radius: 12px; color: #1f2937; overflow: hidden; }
+                        .receipt-head { background: #172554; color: #fff; padding: 16px; }
+                        .receipt-title { font-size: 1rem; font-weight: 800; margin: 0; }
+                        .receipt-meta { color: rgba(255, 255, 255, .75); font-size: .78rem; }
+                        .receipt-body { padding: 16px; }
+                        .receipt-row { align-items: center; display: flex; gap: 12px; justify-content: space-between; padding: 6px 0; }
+                        .receipt-divider { border-top: 1px dashed #c9bfae; margin: 12px 0; }
+                        .receipt-total { align-items: baseline; display: flex; font-size: 1.05rem; font-weight: 800; justify-content: space-between; }
+                        .receipt-note { background: #f8fafc; border-radius: 8px; color: #475569; padding: 10px 12px; }
+                    </style>
                 </head>
-                <body class="p-4">${receiptContent.innerHTML}</body>
+                <body>${receiptContent.outerHTML}</body>
                 </html>`);
             printWindow.document.close();
             printWindow.focus();
